@@ -1,7 +1,5 @@
 package org.carlspring.strongbox.controllers.layout.maven;
 
-import org.carlspring.strongbox.artifact.coordinates.MavenArtifactCoordinates;
-import org.carlspring.strongbox.artifact.generator.MavenArtifactGenerator;
 import org.carlspring.strongbox.config.IntegrationTest;
 import org.carlspring.strongbox.rest.common.MavenRestAssuredBaseTest;
 import org.carlspring.strongbox.services.ArtifactMetadataService;
@@ -23,14 +21,16 @@ import org.apache.maven.artifact.repository.metadata.Metadata;
 import org.apache.maven.artifact.repository.metadata.SnapshotVersion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.junit.jupiter.api.Assertions.*;
-
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 @IntegrationTest
+@Execution(CONCURRENT)
 public class MavenMetadataManagementControllerTest
         extends MavenRestAssuredBaseTest
 {
@@ -223,7 +223,7 @@ public class MavenMetadataManagementControllerTest
         assertFalse(client.pathExists(metadataPath), "Metadata already exists!");
 
         // create new metadata
-        client.rebuildMetadata(STORAGE0, repositoryId, null);
+        client.rebuildMetadata(STORAGE0, REPOSITORY_RELEASES, null);
 
         assertTrue(client.pathExists(metadataPath), "Failed to rebuild release metadata!");
 
