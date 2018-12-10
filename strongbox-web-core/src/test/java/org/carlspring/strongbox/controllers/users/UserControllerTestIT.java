@@ -43,6 +43,7 @@ import org.carlspring.strongbox.users.service.impl.StrongboxUserService.Strongbo
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -56,11 +57,13 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.google.common.collect.ImmutableSet;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Pablo Tirado
  */
 @IntegrationTest
+@Execution(CONCURRENT)
 @Transactional
 public class UserControllerTestIT
         extends RestAssuredBaseTest
@@ -72,6 +75,9 @@ public class UserControllerTestIT
 
     @Inject
     private PasswordEncoder passwordEncoder;
+
+    @Inject
+    private PlatformTransactionManager transactionManager;
 
     private static Stream<Arguments> usersProvider()
     {
