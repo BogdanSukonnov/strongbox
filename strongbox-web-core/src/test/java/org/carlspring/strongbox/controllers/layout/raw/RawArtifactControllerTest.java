@@ -8,7 +8,6 @@ import org.carlspring.strongbox.storage.repository.RawRepositoryFactory;
 import org.carlspring.strongbox.storage.repository.RepositoryPolicyEnum;
 
 import javax.inject.Inject;
-import javax.xml.bind.JAXBException;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -17,19 +16,20 @@ import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.parallel.Execution;
 import org.springframework.http.HttpStatus;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Martin Todorov
  */
 @IntegrationTest
+@Execution(CONCURRENT)
 public class RawArtifactControllerTest
         extends RawRestAssuredBaseTest
 {
@@ -62,22 +62,20 @@ public class RawArtifactControllerTest
     public void init()
             throws Exception
     {
+        // Notes:
+        // This tests resources currently don't need per test method isolation.
+        // In case the requirements change, this test will need to be refactored.
         super.init();
 
         RepositoryDto repository = rawRepositoryFactory.createRepository(REPOSITORY_RELEASES);
         repository.setPolicy(RepositoryPolicyEnum.RELEASE.getPolicy());
 
-        createRepositoryWithFile(repository, STORAGE0, "org/foo/bar/blah.zip");
+        createRepository(STORAGE0, repository);
+
+        // createRepositoryWithFile(repository, STORAGE0, "org/foo/bar/blah.zip");
 
         //noinspection ResultOfMethodCallIgnored
         Files.createDirectories(Paths.get(TEST_RESOURCES));
-    }
-
-    @AfterEach
-    public void removeRepositories()
-            throws IOException, JAXBException
-    {
-        removeRepositories(getRepositoriesToClean());
     }
 
     @Test
@@ -123,6 +121,8 @@ public class RawArtifactControllerTest
     public void testResolveViaHostedRepository()
             throws Exception
     {
+        createFile(STORAGE0, REPOSITORY_RELEASES, "org/foo/bar/blah.zip");
+
         String artifactPath = "/storages/" + STORAGE0 + "/" + REPOSITORY_RELEASES + "/org/foo/bar/blah.zip";
 
         resolveArtifact(artifactPath);
