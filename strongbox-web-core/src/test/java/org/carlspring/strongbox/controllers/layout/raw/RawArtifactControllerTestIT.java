@@ -3,27 +3,29 @@ package org.carlspring.strongbox.controllers.layout.raw;
 import org.carlspring.strongbox.config.IntegrationTest;
 import org.carlspring.strongbox.providers.layout.RawLayoutProvider;
 import org.carlspring.strongbox.rest.common.RawRestAssuredBaseTest;
-import org.carlspring.strongbox.storage.repository.*;
+import org.carlspring.strongbox.storage.repository.MutableRepository;
+import org.carlspring.strongbox.storage.repository.RawRepositoryFactory;
+import org.carlspring.strongbox.storage.repository.RepositoryPolicyEnum;
+import org.carlspring.strongbox.storage.repository.RepositoryTypeEnum;
 
 import javax.inject.Inject;
-import javax.xml.bind.JAXBException;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 import com.google.common.collect.Sets;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.parallel.Execution;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Martin Todorov
  */
 @IntegrationTest
+@Execution(CONCURRENT)
 public class RawArtifactControllerTestIT
         extends RawRestAssuredBaseTest
 {
@@ -50,6 +52,7 @@ public class RawArtifactControllerTestIT
         Set<RepositoryDto> repositories = new LinkedHashSet<>();
         repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_RELEASES, RawLayoutProvider.ALIAS));
         repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_PROXY, RawLayoutProvider.ALIAS));
+        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_GROUP, RawLayoutProvider.ALIAS));
 
         return repositories;
     }
@@ -59,6 +62,9 @@ public class RawArtifactControllerTestIT
     public void init()
             throws Exception
     {
+        // Notes:
+        // This tests resources currently don't need per test method isolation.
+        // In case the requirements change, this test will need to be refactored.
         super.init();
 
         RepositoryDto repository1 = rawRepositoryFactory.createRepository(REPOSITORY_RELEASES);
