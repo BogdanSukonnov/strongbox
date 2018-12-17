@@ -13,14 +13,13 @@ import javax.xml.bind.JAXBException;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.LinkedHashSet;
-import java.util.Set;
 
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
@@ -28,6 +27,7 @@ import static org.carlspring.strongbox.controllers.configuration.ArtifactCoordin
 import static org.carlspring.strongbox.web.RepositoryMethodArgumentResolver.NOT_FOUND_REPOSITORY_MESSAGE;
 import static org.carlspring.strongbox.web.RepositoryMethodArgumentResolver.NOT_FOUND_STORAGE_MESSAGE;
 import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Przemyslaw Fusik
@@ -35,9 +35,15 @@ import static org.hamcrest.Matchers.*;
  * @author Aditya Srinivasan
  */
 @IntegrationTest
+@Execution(CONCURRENT)
 public class ArtifactCoordinateValidatorsManagementControllerTest
         extends MavenRestAssuredBaseTest
 {
+    private final static String REPOSITORY_RELEASES_SINGLE_VALIDATOR = "releases-with-single-validator";
+    private final static String REPOSITORY_RELEASES_DEFAULT_VALIDATORS = "releases-with-default-validators";
+    private final static String REPOSITORY_ANOTHER_RELEASES_SINGLE_VALIDATOR = "another-releases-with-default-validators";
+    private final static String REPOSITORY_ANOTHER_RELEASES_SINGLE_VALIDATOR_2 = "yet-another-releases-with-default-validators";
+    private final static String REPOSITORY_SINGLE_VALIDATOR_ONLY = "single-validator-only";
 
     @Inject
     private MavenRepositoryFactory mavenRepositoryFactory;
@@ -48,11 +54,11 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
     public static Set<RepositoryDto> getRepositoriesToClean()
     {
         Set<RepositoryDto> repositories = new LinkedHashSet<>();
-        repositories.add(createRepositoryMock(STORAGE0, "releases-with-single-validator", Maven2LayoutProvider.ALIAS));
-        repositories.add(createRepositoryMock(STORAGE0, "releases-with-default-validators", Maven2LayoutProvider.ALIAS));
-        repositories.add(createRepositoryMock(STORAGE0, "another-releases-with-default-validators", Maven2LayoutProvider.ALIAS));
-        repositories.add(createRepositoryMock(STORAGE0, "yet-another-releases-with-default-validators", Maven2LayoutProvider.ALIAS));
-        repositories.add(createRepositoryMock(STORAGE0, "single-validator-only", Maven2LayoutProvider.ALIAS));
+        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_RELEASES_SINGLE_VALIDATOR, Maven2LayoutProvider.ALIAS));
+        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_RELEASES_DEFAULT_VALIDATORS, Maven2LayoutProvider.ALIAS));
+        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_ANOTHER_RELEASES_SINGLE_VALIDATOR, Maven2LayoutProvider.ALIAS));
+        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_ANOTHER_RELEASES_SINGLE_VALIDATOR_2, Maven2LayoutProvider.ALIAS));
+        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_SINGLE_VALIDATOR_ONLY, Maven2LayoutProvider.ALIAS));
 
         return repositories;
     }
@@ -64,24 +70,25 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
     {
         super.init();
 
-        RepositoryDto repository1 = mavenRepositoryFactory.createRepository("releases-with-single-validator");
+        RepositoryDto repository1 = mavenRepositoryFactory.createRepository(REPOSITORY_RELEASES_SINGLE_VALIDATOR);
         repository1.setPolicy(RepositoryPolicyEnum.RELEASE.getPolicy());
         repository1.setArtifactCoordinateValidators(
                 new LinkedHashSet<>(Collections.singletonList(redeploymentValidator.getAlias())));
 
         createRepository(STORAGE0, repository1);
 
-        RepositoryDto repository2 = mavenRepositoryFactory.createRepository("releases-with-default-validators");
+        RepositoryDto repository2 = mavenRepositoryFactory.createRepository(REPOSITORY_RELEASES_DEFAULT_VALIDATORS);
         repository2.setPolicy(RepositoryPolicyEnum.RELEASE.getPolicy());
 
         createRepository(STORAGE0, repository2);
 
-        RepositoryDto repository3 = mavenRepositoryFactory.createRepository("another-releases-with-default-validators");
+        RepositoryDto repository3 = mavenRepositoryFactory.createRepository(
+                REPOSITORY_ANOTHER_RELEASES_SINGLE_VALIDATOR);
         repository3.setPolicy(RepositoryPolicyEnum.RELEASE.getPolicy());
 
         createRepository(STORAGE0, repository3);
 
-        RepositoryDto repository4 = mavenRepositoryFactory.createRepository("yet-another-releases-with-default-validators");
+        RepositoryDto repository4 = mavenRepositoryFactory.createRepository(REPOSITORY_ANOTHER_RELEASES_SINGLE_VALIDATOR_2);
         repository4.setPolicy(RepositoryPolicyEnum.RELEASE.getPolicy());
 
         createRepository(STORAGE0, repository4);
@@ -96,13 +103,20 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
         setContextBaseUrl(getContextBaseUrl() + "/api/configuration/artifact-coordinate-validators");
     }
 
+    @AfterEach
+    public void removeRepositories()
+            throws IOException, JAXBException
+    {
+        removeRepositories(getRepositoriesToClean());
+    }
+
     @Test
     public void expectOneValidator()
     {
         String url = getContextBaseUrl() + "/{storageId}/{repositoryId}";
-        String repositoryId = "releases-with-single-validator";
+        String repositoryId = REPOSITORY_RELEASES_SINGLE_VALIDATOR;
 
-        given().header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
                .get(url, STORAGE0, repositoryId)
                .peek()
@@ -115,9 +129,9 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
     public void expectedThreeDefaultValidatorsForRepositoryWithDefaultValidators()
     {
         String url = getContextBaseUrl() + "/{storageId}/{repositoryId}";
-        String repositoryId = "another-releases-with-default-validators";
+        String repositoryId = REPOSITORY_ANOTHER_RELEASES_SINGLE_VALIDATOR;
 
-        given().header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
                .get(url, STORAGE0, repositoryId)
                .peek()
@@ -134,10 +148,10 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
     {
         String url = getContextBaseUrl() + "/{storageId}/{repositoryId}";
         String storageId = "storage-not-found";
-        String repositoryId = "releases-with-single-validator";
+        String repositoryId = REPOSITORY_RELEASES_SINGLE_VALIDATOR;
         String message = String.format(NOT_FOUND_STORAGE_MESSAGE, storageId);
 
-        given().header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
                .get(url, storageId, repositoryId)
                .peek()
@@ -154,7 +168,7 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
         String repositoryId = "releases-not-found";
         String message = String.format(NOT_FOUND_REPOSITORY_MESSAGE, storageId, repositoryId);
 
-        given().header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
                .get(url, storageId, repositoryId)
                .peek()
@@ -169,7 +183,7 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
     void validatorsForReleaseRepositoryShouldBeRemovableAndFailSafe(String acceptHeader)
     {
         String url = getContextBaseUrl() + "/{storageId}/{repositoryId}/{alias}";
-        String repositoryId = "releases-with-default-validators";
+        String repositoryId = REPOSITORY_RELEASES_DEFAULT_VALIDATORS;
         String alias = "maven-snapshot-version-validator";
 
         given().accept(acceptHeader)
@@ -206,7 +220,7 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
     void shouldNotRemoveAliasNotFound(String acceptHeader)
     {
         String url = getContextBaseUrl() + "/{storageId}/{repositoryId}/{alias}";
-        String repositoryId = "yet-another-releases-with-default-validators";
+        String repositoryId = REPOSITORY_ANOTHER_RELEASES_SINGLE_VALIDATOR_2;
         String alias = "alias-not-found";
 
         given().accept(acceptHeader)
@@ -217,19 +231,32 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
                .statusCode(HttpStatus.NOT_FOUND.value())
                .body(containsString(NOT_FOUND_ALIAS_MESSAGE));
     }
-    
+
+
+    @Test
+    public void validatorsForReleaseRepositoryShouldBeAddableAndFailSafeWithResponseInJson()
+    {
+        validatorsForReleaseRepositoryShouldBeAddableAndFailSafe(MediaType.APPLICATION_JSON_VALUE);
+    }
+
+    @Test
+    public void validatorsForReleaseRepositoryShouldBeAddableAndFailSafeWithResponseInText()
+    {
+        validatorsForReleaseRepositoryShouldBeAddableAndFailSafe(MediaType.TEXT_PLAIN_VALUE);
+    }
+
     @Test
     public void getCollectionOfArtifactCoordinateValidators()
     {
         String url = getContextBaseUrl() + "/validators";
-        
-        given().header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+
+        given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
                .get(url)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
-               .body(containsString("versionValidators"),containsString("Maven 2"));
+               .body(containsString("versionValidators"), containsString("Maven 2"));
     }
 
     @Test
@@ -239,13 +266,13 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
         String url = getContextBaseUrl() + "/validators";
         String layoutProvider = "Maven 2";
 
-        given().header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(url,layoutProvider)
+               .get(url, layoutProvider)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
-               .body(containsString("supportedLayoutProviders"),containsString(layoutProvider));
+               .body(containsString("supportedLayoutProviders"), containsString(layoutProvider));
     }
 
     @ParameterizedTest
@@ -255,7 +282,7 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
     {
         String urlList = getContextBaseUrl() + "/{storageId}/{repositoryId}";
         String urlAdd = getContextBaseUrl() + "/{storageId}/{repositoryId}/{alias}";
-        String repositoryId = "releases-with-single-validator";
+        String repositoryId = REPOSITORY_RELEASES_SINGLE_VALIDATOR;
         String alias = "/maven-snapshot-version-validator";
 
         given().accept(MediaType.APPLICATION_JSON_VALUE)
@@ -301,11 +328,5 @@ public class ArtifactCoordinateValidatorsManagementControllerTest
                      containsInAnyOrder("redeployment-validator", "maven-snapshot-version-validator"));
     }
 
-    @AfterEach
-    public void removeRepositories()
-            throws IOException, JAXBException
-    {
-        removeRepositories(getRepositoriesToClean());
-    }
 
 }
