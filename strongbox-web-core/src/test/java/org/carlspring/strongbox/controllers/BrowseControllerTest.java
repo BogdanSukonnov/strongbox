@@ -174,7 +174,6 @@ public class BrowseControllerTest
     public void testRepositoryContents()
             throws Exception
     {
-        String url = getContextBaseUrl() + "/" + STORAGE0 + "/" + REPOSITORY
         generateArtifact(getRepositoryBasedir(STORAGE0, REPOSITORY).getAbsolutePath(),
                          "org.carlspring.strongbox.browsing:test-browsing",
                          new String[]{ "1.1",
@@ -199,8 +198,6 @@ public class BrowseControllerTest
                                      .prettyPeek()
                                      .asString();
 
-        String link = "/storages/" + STORAGE0 + "/" + REPOSITORY +
-                      "/org/carlspring/strongbox/browsing/test-browsing/1.1/test-browsing-1.1.jar";
         String link = getContextBaseUrl() + "/storages/" + STORAGE0 + "/" + REPOSITORY +
                       "/org/carlspring/strongbox/browsing/test-browsing/1.1/test-browsing-1.1.jar";
 
