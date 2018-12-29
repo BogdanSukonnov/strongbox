@@ -20,17 +20,20 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.carlspring.strongbox.rest.client.RestAssuredArtifactClient.OK;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Guido Grazioli
  * @author Pablo Tirado
  */
 @IntegrationTest
+@Execution(CONCURRENT)
 public class BrowseControllerTest
         extends MavenRestAssuredBaseTest
 {
@@ -79,9 +82,8 @@ public class BrowseControllerTest
     public void testGetStorages()
             throws Exception
     {
+        String url = getContextBaseUrl() + BrowseController.ROOT_CONTEXT;
 
-        String url = getContextBaseUrl();
-        
         DirectoryListing returned = given().accept(MediaType.APPLICATION_JSON_VALUE)
                                                .when()
                                                .get(url)
@@ -154,7 +156,8 @@ public class BrowseControllerTest
     @Test
     public void testGetRepositoriesWithStorageNotFound()
     {
-        String url = getContextBaseUrl() + "/storagefoo";
+        String url = getContextBaseUrl() + BrowseController.ROOT_CONTEXT + "/storagefoo";
+
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
                .get(url)
@@ -184,10 +187,10 @@ public class BrowseControllerTest
                      + "/org/carlspring/strongbox/browsing/test-browsing/1.1";
 
         DirectoryListing returned = given().accept(MediaType.APPLICATION_JSON_VALUE)
-                                     .when()
-                                     .get(url)
-                                     .prettyPeek()
-                                     .as(DirectoryListing.class);
+                                           .when()
+                                           .get(url)
+                                           .prettyPeek()
+                                           .as(DirectoryListing.class);
 
         assertTrue(returned.getFiles().size() == 6
                    && returned.getFiles().get(0).getName().equals("test-browsing-1.1.jar"), "Invalid files returned");
@@ -207,7 +210,8 @@ public class BrowseControllerTest
     @Test
     public void testRepositoryContentsWithRepositoryNotFound()
     {
-        String url = getContextBaseUrl() + "/" + STORAGE0 + "/repofoo";
+        String url = getContextBaseUrl() + BrowseController.ROOT_CONTEXT + "/storage0/repofoo";
+
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
                .get(url)
@@ -226,7 +230,8 @@ public class BrowseControllerTest
     @Test
     public void testRepositoryContentsWithPathNotFound()
     {
-        String url = getContextBaseUrl() + "/" + STORAGE0  + "/releases/foo/bar";
+        String url = getContextBaseUrl() + BrowseController.ROOT_CONTEXT + "/storage0/releases/foo/bar";
+
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
                .get(url)
