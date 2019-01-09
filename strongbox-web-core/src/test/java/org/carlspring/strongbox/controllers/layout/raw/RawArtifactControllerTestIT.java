@@ -18,14 +18,11 @@ import com.google.common.collect.Sets;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.parallel.Execution;
-import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Martin Todorov
  */
 @IntegrationTest
-@Execution(CONCURRENT)
 public class RawArtifactControllerTestIT
         extends RawRestAssuredBaseTest
 {
