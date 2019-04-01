@@ -1,11 +1,5 @@
 package org.carlspring.strongbox.controllers.aql;
 
-import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
-import static org.carlspring.strongbox.artifact.coordinates.MavenArtifactCoordinates.LAYOUT_NAME;
-import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
-
-import java.nio.file.Path;
-
 import org.carlspring.strongbox.artifact.generator.MavenArtifactGenerator;
 import org.carlspring.strongbox.config.IntegrationTest;
 import org.carlspring.strongbox.rest.common.MavenRestAssuredBaseTest;
@@ -14,16 +8,24 @@ import org.carlspring.strongbox.testing.artifact.ArtifactManagementTestExecution
 import org.carlspring.strongbox.testing.artifact.TestArtifact;
 import org.carlspring.strongbox.testing.storage.repository.RepositoryManagementTestExecutionListener;
 import org.carlspring.strongbox.testing.storage.repository.TestRepository;
+
+import java.nio.file.Path;
+
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
+import static org.carlspring.strongbox.artifact.coordinates.MavenArtifactCoordinates.LAYOUT_NAME;
+import static org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD;
 /**
  * @author sbespalov
  *
  */
+@Disabled
 @IntegrationTest
 @Execution(SAME_THREAD)
 public class AqlControllerTest extends MavenRestAssuredBaseTest

@@ -16,6 +16,7 @@ import java.util.LinkedHashSet;
 import io.restassured.module.mockmvc.response.ValidatableMockMvcResponse;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -31,6 +32,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author Alex Oreshkevich
  * @author Pablo Tirado
  */
+@Disabled
 @IntegrationTest
 public class TrashControllerTest
         extends MavenRestAssuredBaseTest
