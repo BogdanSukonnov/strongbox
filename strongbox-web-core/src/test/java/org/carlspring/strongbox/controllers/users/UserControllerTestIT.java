@@ -1,35 +1,5 @@
 package org.carlspring.strongbox.controllers.users;
 
-import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
-import static org.carlspring.strongbox.controllers.users.UserController.FAILED_CREATE_USER;
-import static org.carlspring.strongbox.controllers.users.UserController.FAILED_GENERATE_SECURITY_TOKEN;
-import static org.carlspring.strongbox.controllers.users.UserController.NOT_FOUND_USER;
-import static org.carlspring.strongbox.controllers.users.UserController.OWN_USER_DELETE_FORBIDDEN;
-import static org.carlspring.strongbox.controllers.users.UserController.SUCCESSFUL_CREATE_USER;
-import static org.carlspring.strongbox.controllers.users.UserController.SUCCESSFUL_DELETE_USER;
-import static org.carlspring.strongbox.controllers.users.UserController.SUCCESSFUL_UPDATE_USER;
-import static org.carlspring.strongbox.controllers.users.UserController.USER_DELETE_FORBIDDEN;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.startsWith;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.Set;
-import java.util.function.Consumer;
-import java.util.stream.Stream;
-
-import javax.inject.Inject;
-
-import org.apache.commons.collections4.SetUtils;
 import org.carlspring.strongbox.config.IntegrationTest;
 import org.carlspring.strongbox.controllers.users.support.UserOutput;
 import org.carlspring.strongbox.controllers.users.support.UserResponseEntity;
@@ -40,6 +10,14 @@ import org.carlspring.strongbox.users.domain.UserData;
 import org.carlspring.strongbox.users.dto.UserDto;
 import org.carlspring.strongbox.users.service.UserService;
 import org.carlspring.strongbox.users.service.impl.StrongboxUserService.StrongboxUserServiceQualifier;
+
+import javax.inject.Inject;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
+
+import com.google.common.collect.ImmutableSet;
+import org.apache.commons.collections4.SetUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -53,10 +31,16 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
-
-import com.google.common.collect.ImmutableSet;
+import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
+import static org.carlspring.strongbox.controllers.users.UserController.*;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.startsWith;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
