@@ -56,7 +56,7 @@ public abstract class MavenRestAssuredBaseTest
     protected RestAssuredArtifactClient client;
 
     @Inject
-    private RepositoryPathResolver repositoryPathResolver;
+    protected RepositoryPathResolver repositoryPathResolver;
 
     @Value("${strongbox.url}")
     private String contextBaseUrl;

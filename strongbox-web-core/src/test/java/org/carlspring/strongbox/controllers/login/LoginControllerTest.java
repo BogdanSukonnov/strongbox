@@ -10,7 +10,6 @@ import org.carlspring.strongbox.users.service.impl.StrongboxUserService.Strongbo
 import javax.inject.Inject;
 
 import com.google.common.collect.ImmutableSet;
-import io.restassured.module.mockmvc.RestAssuredMockMvc;
 import org.hamcrest.CoreMatchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -26,6 +25,7 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Przemyslaw Fusik
+ * @author Pablo Tirado
  */
 @IntegrationTest
 @Execution(CONCURRENT)
@@ -43,6 +43,8 @@ public class LoginControllerTest
             throws Exception
     {
         super.init();
+
+        setContextBaseUrl("/api/login");
     }
 
     @AfterEach
@@ -64,17 +66,17 @@ public class LoginControllerTest
         loginInput.setUsername("admin");
         loginInput.setPassword("password");
 
-        RestAssuredMockMvc.given()
-                          .contentType("application/json")
-                          .header("Accept", "application/json")
-                          .body(loginInput)
-                          .when()
-                          .post("/api/login")
-                          .peek()
-                          .then()
-                          .body("token", CoreMatchers.any(String.class))
-                          .body("authorities", hasSize(greaterThan(0)))
-                          .statusCode(200);
+        String url = getContextBaseUrl();
+        given().contentType(MediaType.APPLICATION_JSON_VALUE)
+               .accept(MediaType.APPLICATION_JSON_VALUE)
+               .body(loginInput)
+               .when()
+               .post(url)
+               .peek()
+               .then()
+               .body("token", CoreMatchers.any(String.class))
+               .body("authorities", hasSize(greaterThan(0)))
+               .statusCode(HttpStatus.OK.value());
     }
 
     @WithAnonymousUser
@@ -85,16 +87,16 @@ public class LoginControllerTest
         loginInput.setUsername("przemyslaw_fusik");
         loginInput.setPassword("password");
 
-        RestAssuredMockMvc.given()
-                          .contentType("application/json")
-                          .header("Accept", "application/json")
-                          .body(loginInput)
-                          .when()
-                          .post("/api/login")
-                          .peek()
-                          .then()
-                          .body("error", CoreMatchers.equalTo("invalid.credentials"))
-                          .statusCode(401);
+        String url = getContextBaseUrl();
+        given().contentType(MediaType.APPLICATION_JSON_VALUE)
+               .accept(MediaType.APPLICATION_JSON_VALUE)
+               .body(loginInput)
+               .when()
+               .post(url)
+               .peek()
+               .then()
+               .body("error", CoreMatchers.equalTo("invalid.credentials"))
+               .statusCode(HttpStatus.UNAUTHORIZED.value());
     }
 
     @Test
@@ -111,16 +113,16 @@ public class LoginControllerTest
         loginInput.setUsername("test-disabled-user-login");
         loginInput.setPassword("1234");
 
-        RestAssuredMockMvc.given()
-                          .contentType("application/json")
-                          .header("Accept", "application/json")
-                          .body(loginInput)
-                          .when()
-                          .post("/api/login")
-                          .peek()
-                          .then()
-                          .body("error", CoreMatchers.equalTo("User account is locked"))
-                          .statusCode(401);
+        String url = getContextBaseUrl();
+        given().contentType(MediaType.APPLICATION_JSON_VALUE)
+               .accept(MediaType.APPLICATION_JSON_VALUE)
+               .body(loginInput)
+               .when()
+               .post(url)
+               .peek()
+               .then()
+               .body("error", CoreMatchers.equalTo("User account is locked"))
+               .statusCode(HttpStatus.UNAUTHORIZED.value());
     }
 
     @Test
@@ -131,41 +133,42 @@ public class LoginControllerTest
         loginInput.setUsername("admin-cache-eviction-test");
         loginInput.setPassword("password");
 
-        RestAssuredMockMvc.given()
-                          .contentType("application/json")
-                          .header("Accept", "application/json")
-                          .body(loginInput)
-                          .when()
-                          .post("/api/login")
-                          .peek()
-                          .then()
-                          .body("token", CoreMatchers.any(String.class))
-                          .body("authorities", hasSize(greaterThan(0)))
-                          .statusCode(200);
+        String url = getContextBaseUrl();
+        given().contentType(MediaType.APPLICATION_JSON_VALUE)
+               .accept(MediaType.APPLICATION_JSON_VALUE)
+               .body(loginInput)
+               .when()
+               .post(url)
+               .peek()
+               .then()
+               .body("token", CoreMatchers.any(String.class))
+               .body("authorities", hasSize(greaterThan(0)))
+               .statusCode(HttpStatus.OK.value());
 
         UserForm userForm = new UserForm();
         userForm.setUsername("admin-cache-eviction-test");
         userForm.setPassword("passwordChanged");
 
+        url = "/api/account";
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .contentType(MediaType.APPLICATION_JSON_VALUE)
                .body(userForm)
                .when()
-               .put("/api/account")
+               .put(url)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value());
 
-        RestAssuredMockMvc.given()
-                          .contentType("application/json")
-                          .header("Accept", "application/json")
-                          .body(loginInput)
-                          .when()
-                          .post("/api/login")
-                          .peek()
-                          .then()
-                          .body("error", CoreMatchers.equalTo("invalid.credentials"))
-                          .statusCode(HttpStatus.UNAUTHORIZED.value());
+        url = getContextBaseUrl();
+        given().contentType(MediaType.APPLICATION_JSON_VALUE)
+               .accept(MediaType.APPLICATION_JSON_VALUE)
+               .body(loginInput)
+               .when()
+               .post(url)
+               .peek()
+               .then()
+               .body("error", CoreMatchers.equalTo("invalid.credentials"))
+               .statusCode(HttpStatus.UNAUTHORIZED.value());
     }
 
 }
