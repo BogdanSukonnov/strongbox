@@ -1,23 +1,27 @@
 package org.carlspring.strongbox.controllers;
 
 import org.carlspring.strongbox.config.IntegrationTest;
-import org.carlspring.strongbox.providers.layout.Maven2LayoutProvider;
+import org.carlspring.strongbox.providers.io.RepositoryFiles;
+import org.carlspring.strongbox.providers.io.RepositoryPath;
+import org.carlspring.strongbox.providers.io.RootRepositoryPath;
 import org.carlspring.strongbox.rest.common.MavenRestAssuredBaseTest;
-import org.carlspring.strongbox.storage.repository.MavenRepositoryFactory;
-import org.carlspring.strongbox.storage.repository.RepositoryDto;
-import org.carlspring.strongbox.yaml.configuration.repository.MavenRepositoryConfigurationDto;
+import org.carlspring.strongbox.storage.repository.Repository;
+import org.carlspring.strongbox.testing.artifact.ArtifactManagementTestExecutionListener;
+import org.carlspring.strongbox.testing.artifact.MavenTestArtifact;
+import org.carlspring.strongbox.testing.repository.MavenRepository;
+import org.carlspring.strongbox.testing.storage.repository.RepositoryAttributes;
+import org.carlspring.strongbox.testing.storage.repository.RepositoryManagementTestExecutionListener;
 
-import javax.inject.Inject;
-import javax.xml.bind.JAXBException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.LinkedHashSet;
-import java.util.Set;
 
 import io.restassured.module.mockmvc.response.ValidatableMockMvcResponse;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
@@ -26,14 +30,15 @@ import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Martin Todorov
  * @author Alex Oreshkevich
  * @author Pablo Tirado
  */
-@Disabled
 @IntegrationTest
+@Execution(CONCURRENT)
 public class TrashControllerTest
         extends MavenRestAssuredBaseTest
 {
@@ -42,21 +47,6 @@ public class TrashControllerTest
 
     private static final String REPOSITORY_WITH_FORCE_DELETE = "tct-releases-with-force-delete";
 
-    private static final String ARTIFACT_FILE_IN_TRASH = "/.trash/" +
-                                                         "org/carlspring/strongbox/test-artifact-to-trash/1.0/" +
-                                                         "test-artifact-to-trash-1.0.jar";
-
-    @Inject
-    private MavenRepositoryFactory mavenRepositoryFactory;
-
-
-    @BeforeAll
-    public static void cleanUp()
-            throws Exception
-    {
-        cleanUp(getRepositoriesToClean());
-    }
-
     @Override
     @BeforeEach
     public void init()
@@ -64,65 +54,34 @@ public class TrashControllerTest
     {
         super.init();
 
-        // Notes:
-        // - Used by testForceDeleteArtifactNotAllowed()
-        // - Forced deletions are not allowed
-        // - Has enabled trash
-        MavenRepositoryConfigurationDto mavenRepositoryConfiguration = new MavenRepositoryConfigurationDto();
-        mavenRepositoryConfiguration.setIndexingEnabled(false);
-
-        RepositoryDto repositoryWithTrash = mavenRepositoryFactory.createRepository(REPOSITORY_WITH_TRASH);
-        repositoryWithTrash.setAllowsForceDeletion(false);
-        repositoryWithTrash.setTrashEnabled(true);
-        repositoryWithTrash.setRepositoryConfiguration(mavenRepositoryConfiguration);
-
-        createRepository(STORAGE0, repositoryWithTrash);
-
-        generateArtifact(getRepositoryBasedir(STORAGE0, REPOSITORY_WITH_TRASH).getAbsolutePath(),
-                         "org.carlspring.strongbox:test-artifact-to-trash:1.0");
-
-        // Notes:
-        // - Used by testForceDeleteArtifactAllowed()
-        // - Forced deletions are allowed
-        RepositoryDto repositoryWithForceDeletions = mavenRepositoryFactory.createRepository(REPOSITORY_WITH_FORCE_DELETE);
-        repositoryWithForceDeletions.setAllowsForceDeletion(false);
-        repositoryWithForceDeletions.setRepositoryConfiguration(mavenRepositoryConfiguration);
-
-        createRepository(STORAGE0, repositoryWithForceDeletions);
-
-        generateArtifact(getRepositoryBasedir(STORAGE0, REPOSITORY_WITH_FORCE_DELETE).getAbsolutePath(),
-                         "org.carlspring.strongbox:test-artifact-to-trash:1.1");
+        setContextBaseUrl(getContextBaseUrl() + "/api/trash");
     }
 
-    @AfterEach
-    public void removeRepositories()
-            throws IOException, JAXBException
-    {
-        removeRepositories(getRepositoriesToClean());
-    }
-
-    public static Set<RepositoryDto> getRepositoriesToClean()
-    {
-        Set<RepositoryDto> repositories = new LinkedHashSet<>();
-        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_WITH_TRASH, Maven2LayoutProvider.ALIAS));
-        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_WITH_FORCE_DELETE, Maven2LayoutProvider.ALIAS));
-
-        return repositories;
-    }
-
+    @ExtendWith({ RepositoryManagementTestExecutionListener.class,
+                  ArtifactManagementTestExecutionListener.class })
     @Test
-    public void testForceDeleteArtifactNotAllowed()
+    public void testForceDeleteArtifactNotAllowed(@MavenRepository(repositoryId = REPOSITORY_WITH_TRASH)
+                                                  @RepositoryAttributes(trashEnabled = true)
+                                                  Repository repository,
+                                                  @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH,
+                                                                     id = "org.carlspring.strongbox:test-artifact-to-trash",
+                                                                     versions = "1.0")
+                                                  Path artifactPath)
+            throws IOException
     {
-        final String artifactPath = "org/carlspring/strongbox/test-artifact-to-trash/1.0/test-artifact-to-trash-1.0.jar";
+        final String storageId = repository.getStorage().getId();
+        final String repositoryId = repository.getId();
+        final RootRepositoryPath repositoryPath = repositoryPathResolver.resolve(repository);
+
+        final String artifactPathStr = repositoryPath.relativize(artifactPath).toString();
+        final RepositoryPath artifactRepositoryPath = repositoryPathResolver.resolve(repository, artifactPathStr);
 
         // Delete the artifact (this one should get placed under the .trash)
-        client.delete(STORAGE0, REPOSITORY_WITH_TRASH, artifactPath, false);
+        client.delete(storageId, repositoryId, artifactPathStr, false);
 
-        final Path repositoryDir = Paths.get(getRepositoryBasedir(STORAGE0, REPOSITORY_WITH_TRASH).getAbsolutePath() + "/.trash");
+        final Path artifactFile = RepositoryFiles.trash(artifactRepositoryPath);
 
-        final Path artifactFile = repositoryDir.resolve(artifactPath);
-
-        logger.debug("Artifact file: " + artifactFile.toAbsolutePath());
+        logger.debug("Artifact file: {}", artifactFile.toAbsolutePath());
 
         assertTrue(Files.exists(artifactFile),
                    "Should have moved the artifact to the trash during a force delete operation, " +
@@ -133,59 +92,91 @@ public class TrashControllerTest
         assertTrue(Files.exists(repositoryIndexDir), "Should not have deleted .index directory!");
     }
 
+    @ExtendWith({ RepositoryManagementTestExecutionListener.class,
+                  ArtifactManagementTestExecutionListener.class })
     @Test
-    public void testForceDeleteArtifactAllowed()
+    public void testForceDeleteArtifactAllowed(@MavenRepository(repositoryId = REPOSITORY_WITH_FORCE_DELETE)
+                                               Repository repository,
+                                               @MavenTestArtifact(repositoryId = REPOSITORY_WITH_FORCE_DELETE,
+                                                                  id = "org.carlspring.strongbox:test-artifact-to-trash",
+                                                                  versions = "1.1")
+                                               Path artifactPath)
+            throws IOException
     {
-        final String artifactPath = "org/carlspring/strongbox/test-artifact-to-trash/1.1/test-artifact-to-trash-1.1.jar";
+        final String storageId = repository.getStorage().getId();
+        final String repositoryId = repository.getId();
+        final RootRepositoryPath repositoryPath = repositoryPathResolver.resolve(repository);
+
+        final String artifactPathStr = repositoryPath.relativize(artifactPath).toString();
+        final RepositoryPath artifactRepositoryPath = repositoryPathResolver.resolve(repository, artifactPathStr);
 
         // Delete the artifact (this one shouldn't get placed under the .trash)
-        client.delete(STORAGE0, REPOSITORY_WITH_FORCE_DELETE, artifactPath, true);
+        client.delete(storageId, repositoryId, artifactPathStr, true);
 
-        final Path repositoryTrashDir = Paths.get(getRepositoryBasedir(STORAGE0, REPOSITORY_WITH_FORCE_DELETE) + "/.trash");
+        final Path artifactFileInTrash = RepositoryFiles.trash(artifactRepositoryPath);
 
-        final Path repositoryDir = Paths.get(getRepositoryBasedir(STORAGE0, REPOSITORY_WITH_FORCE_DELETE) + "/" +
-                                             REPOSITORY_WITH_FORCE_DELETE + "/.trash");
+        final Path repositoryDir = repositoryPath.resolve(repositoryId).resolve(".trash");
 
-        assertFalse(Files.exists(repositoryTrashDir.resolve(artifactPath)),
+        assertFalse(Files.exists(artifactFileInTrash),
                     "Failed to delete artifact during a force delete operation!");
-        assertFalse(Files.exists(repositoryDir.resolve(artifactPath)),
+        assertFalse(Files.exists(repositoryDir.resolve(artifactPathStr)),
                     "Failed to delete artifact during a force delete operation!");
     }
 
+    @ExtendWith({ RepositoryManagementTestExecutionListener.class,
+                  ArtifactManagementTestExecutionListener.class })
     @ParameterizedTest
     @ValueSource(strings = { MediaType.APPLICATION_JSON_VALUE,
                              MediaType.TEXT_PLAIN_VALUE })
-    void testDeleteArtifactAndEmptyTrashForRepository(String acceptHeader)
+    void testDeleteArtifactAndEmptyTrashForRepository(String acceptHeader,
+                                                      @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH)
+                                                      @RepositoryAttributes(trashEnabled = true)
+                                                      Repository repository,
+                                                      @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH,
+                                                                         id = "org.carlspring.strongbox:test-artifact-to-trash",
+                                                                         versions = "1.0")
+                                                      Path artifactPath)
     {
-        String url = getContextBaseUrl() + "/api/trash/" + STORAGE0 + "/" + REPOSITORY_WITH_TRASH;
+        final String storageId = repository.getStorage().getId();
+        final String repositoryId = repository.getId();
+
+        String url = getContextBaseUrl() + "/{storageId}/{repositoryId}";
 
         ValidatableMockMvcResponse response = given().accept(acceptHeader)
                                                      .when()
-                                                     .delete(url)
+                                                     .delete(url, storageId, repositoryId)
                                                      .peek()
                                                      .then()
                                                      .statusCode(HttpStatus.OK.value());
 
-        String message = "The trash for '" + STORAGE0 + ":" + REPOSITORY_WITH_TRASH + "' was removed successfully.";
+        String message = String.format("The trash for '%s:%s' was removed successfully.", storageId, repositoryId);
         validateResponseBody(response, acceptHeader, message);
 
-        assertFalse(Files.exists(getPathToArtifactInTrash()),
-                    "Failed to empty trash for repository '" + REPOSITORY_WITH_TRASH + "'!");
+        assertFalse(Files.exists(getPathToArtifactInTrash(repository, artifactPath)),
+                    "Failed to empty trash for repository '" + repositoryId + "'!");
     }
 
-    private Path getPathToArtifactInTrash()
-    {
-        return Paths.get(getRepositoryBasedir(STORAGE0, REPOSITORY_WITH_TRASH).getAbsolutePath() + "/" +
-                         ARTIFACT_FILE_IN_TRASH);
-    }
-
-
+    @ExtendWith({ RepositoryManagementTestExecutionListener.class,
+                  ArtifactManagementTestExecutionListener.class })
     @ParameterizedTest
     @ValueSource(strings = { MediaType.APPLICATION_JSON_VALUE,
                              MediaType.TEXT_PLAIN_VALUE })
-    void testDeleteArtifactAndEmptyTrashForAllRepositories(String acceptHeader)
+    void testDeleteArtifactAndEmptyTrashForAllRepositories(String acceptHeader,
+                                                           @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH)
+                                                           @RepositoryAttributes(trashEnabled = true)
+                                                           Repository repository1,
+                                                           @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH,
+                                                                              id = "org.carlspring.strongbox:test-artifact-to-trash",
+                                                                              versions = "1.0")
+                                                           Path artifactPath1,
+                                                           @MavenRepository(repositoryId = REPOSITORY_WITH_FORCE_DELETE)
+                                                           Repository repository2,
+                                                           @MavenTestArtifact(repositoryId = REPOSITORY_WITH_FORCE_DELETE,
+                                                                              id = "org.carlspring.strongbox:test-artifact-to-trash",
+                                                                              versions = "1.1")
+                                                           Path artifactPath2)
     {
-        String url = getContextBaseUrl() + "/api/trash";
+        String url = getContextBaseUrl();
 
         ValidatableMockMvcResponse response = given().accept(acceptHeader)
                                                      .when()
@@ -197,8 +188,16 @@ public class TrashControllerTest
         String message = "The trash for all repositories was successfully removed.";
         validateResponseBody(response, acceptHeader, message);
 
-        assertFalse(Files.exists(getPathToArtifactInTrash()),
-                    "Failed to empty trash for repository '" + REPOSITORY_WITH_TRASH + "'!");
+        assertFalse(Files.exists(getPathToArtifactInTrash(repository1, artifactPath1)),
+                    "Failed to empty trash for repository '" + repository1.getId() + "'!");
+    }
+
+    private Path getPathToArtifactInTrash(Repository repository,
+                                          Path artifactPath)
+    {
+        RootRepositoryPath repositoryPath = repositoryPathResolver.resolve(repository);
+        String artifactPathStr = repositoryPath.relativize(artifactPath).toString();
+        return repositoryPath.resolve(".trash").resolve(artifactPathStr);
     }
 
     private void validateResponseBody(ValidatableMockMvcResponse response,
