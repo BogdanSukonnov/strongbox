@@ -17,7 +17,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import io.restassured.module.mockmvc.response.ValidatableMockMvcResponse;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -87,7 +86,7 @@ public class TrashControllerTest
                    "Should have moved the artifact to the trash during a force delete operation, " +
                            "when allowsForceDeletion is not enabled!");
 
-        final Path repositoryIndexDir = Paths.get(getRepositoryBasedir(STORAGE0, REPOSITORY_WITH_TRASH) + "/.index");
+        final Path repositoryIndexDir = repositoryPath.resolve(".index");
 
         assertTrue(Files.exists(repositoryIndexDir), "Should not have deleted .index directory!");
     }
