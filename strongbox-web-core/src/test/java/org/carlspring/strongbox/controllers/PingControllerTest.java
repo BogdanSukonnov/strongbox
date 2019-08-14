@@ -1,15 +1,15 @@
 package org.carlspring.strongbox.controllers;
 
-import io.restassured.module.mockmvc.response.ValidatableMockMvcResponse;
 import org.carlspring.strongbox.config.IntegrationTest;
 import org.carlspring.strongbox.rest.common.MavenRestAssuredBaseTest;
+
+import io.restassured.module.mockmvc.response.ValidatableMockMvcResponse;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithAnonymousUser;
-
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.notNullValue;
@@ -28,7 +28,7 @@ public class PingControllerTest
             throws Exception
     {
         super.init();
-        setContextBaseUrl(getContextBaseUrl() + "/api/ping");
+        setContextBaseUrl("/api/ping");
     }
 
     @ParameterizedTest
@@ -36,9 +36,10 @@ public class PingControllerTest
                              MediaType.TEXT_PLAIN_VALUE })
     void shouldReturnPong(String acceptHeader)
     {
+        String url = getContextBaseUrl();
         ValidatableMockMvcResponse response = given().accept(acceptHeader)
                                                      .when()
-                                                     .get(getContextBaseUrl())
+                                                     .get(url)
                                                      .peek()
                                                      .then()
                                                      .statusCode(HttpStatus.OK.value());
@@ -52,9 +53,10 @@ public class PingControllerTest
                              MediaType.TEXT_PLAIN_VALUE })
     void shouldReturnPongForAuthenticatedUsers(String acceptHeader)
     {
+        String url = getContextBaseUrl() + "/token";
         ValidatableMockMvcResponse response = given().accept(acceptHeader)
                                                      .when()
-                                                     .get(getContextBaseUrl() + "/token")
+                                                     .get(url)
                                                      .peek()
                                                      .then()
                                                      .statusCode(HttpStatus.OK.value());
@@ -69,9 +71,10 @@ public class PingControllerTest
     @WithAnonymousUser
     void anonymousUsersShouldNotBeAbleToAccess(String acceptHeader)
     {
+        String url = getContextBaseUrl() + "/token";
         given().accept(acceptHeader)
                .when()
-               .get(getContextBaseUrl() + "/token")
+               .get(url)
                .peek()
                .then()
                .log()

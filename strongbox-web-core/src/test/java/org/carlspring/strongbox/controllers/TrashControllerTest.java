@@ -54,7 +54,7 @@ public class TrashControllerTest
     {
         super.init();
 
-        setContextBaseUrl(getContextBaseUrl() + "/api/trash");
+        setContextBaseUrl("/api/trash");
     }
 
     @ExtendWith({ RepositoryManagementTestExecutionListener.class,

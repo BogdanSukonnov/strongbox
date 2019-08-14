@@ -13,7 +13,6 @@ import javax.transaction.Transactional;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import org.apache.http.HttpHeaders;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.Execution;
@@ -52,7 +51,7 @@ public class AccountControllerTest
             throws Exception
     {
         super.init();
-        setContextBaseUrl(getContextBaseUrl() + "/api/account");
+        setContextBaseUrl("/api/account");
     }
 
     @BeforeTransaction
@@ -69,9 +68,10 @@ public class AccountControllerTest
     @WithUserDetails("admin")
     public void testGetAccountDetails()
     {
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl())
+               .get(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -83,9 +83,10 @@ public class AccountControllerTest
     @Transactional
     public void testGetAccountDetailsOnDisabledUserShouldFail()
     {
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl())
+               .get(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.FORBIDDEN.value())
@@ -107,18 +108,19 @@ public class AccountControllerTest
         UserForm userForm = new UserForm();
         userForm.setSecurityTokenKey("1234");
 
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .contentType(MediaType.APPLICATION_JSON_VALUE)
                .body(userForm)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value());
 
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl())
+               .get(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -133,7 +135,7 @@ public class AccountControllerTest
                .contentType(MediaType.APPLICATION_JSON_VALUE)
                .body(userForm)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value());
@@ -142,7 +144,7 @@ public class AccountControllerTest
 
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl())
+               .get(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -168,9 +170,10 @@ public class AccountControllerTest
         userForm.setRoles(new HashSet<>(Arrays.asList("admin", "super-admin")));
         userForm.setEnabled(false);
 
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl())
+               .get(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value());
@@ -179,14 +182,14 @@ public class AccountControllerTest
                .contentType(MediaType.APPLICATION_JSON_VALUE)
                .body(userForm)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value());
 
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl())
+               .get(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -209,11 +212,12 @@ public class AccountControllerTest
 
         UserData originalUser = userService.findByUserName(username);
 
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(MediaType.APPLICATION_JSON_VALUE)
                .body(userForm)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value());
@@ -228,9 +232,10 @@ public class AccountControllerTest
     @WithAnonymousUser
     public void testAnonymousUsersShouldNotBeAbleToAccess()
     {
-        given().header(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)
+        String url = getContextBaseUrl();
+        given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl())
+               .get(url)
                .peek()
                .then()
                .log().all()

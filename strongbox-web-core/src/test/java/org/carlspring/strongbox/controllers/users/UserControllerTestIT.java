@@ -31,7 +31,6 @@ import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.security.test.context.support.WithUserDetails;
-import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import static io.restassured.module.mockmvc.RestAssuredMockMvc.given;
@@ -60,9 +59,6 @@ public class UserControllerTestIT
     @Inject
     private PasswordEncoder passwordEncoder;
 
-    @Inject
-    private PlatformTransactionManager transactionManager;
-
     private static Stream<Arguments> usersProvider()
     {
         return Stream.of(
@@ -77,7 +73,7 @@ public class UserControllerTestIT
             throws Exception
     {
         super.init();
-        setContextBaseUrl(getContextBaseUrl() + "/api/users");
+        setContextBaseUrl("/api/users");
     }
 
     @ParameterizedTest
@@ -97,11 +93,12 @@ public class UserControllerTestIT
         UserForm userForm = buildFromUser(new UserData(user), u -> u.setEnabled(true));
 
         // create new user
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(userForm)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value()) // check http status code
@@ -114,9 +111,10 @@ public class UserControllerTestIT
         assertEquals(username, createdUser.getUsername());
 
         // By default assignableRoles should not present in the response.
+        url = getContextBaseUrl() + "/{username}";
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl() + "/{name}", username)
+               .get(url, username)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -128,8 +126,9 @@ public class UserControllerTestIT
 
         // assignableRoles should be present only if there is ?assignableRoles=true in the request.
         given().accept(MediaType.APPLICATION_JSON_VALUE)
+               .param("formFields", true)
                .when()
-               .get(getContextBaseUrl() + "/{name}?formFields=true", username)
+               .get(url, username)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -146,9 +145,10 @@ public class UserControllerTestIT
     {
         final String username = "userNotFound";
 
+        String url = getContextBaseUrl() + "/{username}";
         given().accept(acceptHeader)
                .when()
-               .get(getContextBaseUrl() + "/{name}", username)
+               .get(url, username)
                .then()
                .statusCode(HttpStatus.NOT_FOUND.value())
                .body(containsString(NOT_FOUND_USER));
@@ -176,11 +176,12 @@ public class UserControllerTestIT
 
         displayAllUsers();
 
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(test)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value()) // check http status code
@@ -200,11 +201,12 @@ public class UserControllerTestIT
         deleteCreatedUser(username);
         UserForm test = buildUser(username, "password");
 
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(test)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -214,7 +216,7 @@ public class UserControllerTestIT
                .accept(acceptHeader)
                .body(test)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek()
                .then()
                .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -227,9 +229,10 @@ public class UserControllerTestIT
     @Test
     public void testRetrieveAllUsers()
     {
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl())
+               .get(url)
                .peek() // Use peek() to print the output
                .then()
                .body("users", hasSize(greaterThan(0)))
@@ -245,11 +248,12 @@ public class UserControllerTestIT
         // create new user
         UserForm test = buildUser(username, "password-update", "my-new-security-token");
 
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(test)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value()) // check http status code
@@ -267,11 +271,12 @@ public class UserControllerTestIT
         UserForm updatedUser = buildFromUser(createdUser, u -> u.setEnabled(true));
 
         // send update request
+        url = getContextBaseUrl() + "/{username}";
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(updatedUser)
                .when()
-               .put(getContextBaseUrl() + "/" + username)
+               .put(url, username)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -296,11 +301,12 @@ public class UserControllerTestIT
         UserForm input = buildFromUser(mavenUser, null);
         input.setPassword(null);
 
+        String url = getContextBaseUrl() + "/{username}";
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(input)
                .when()
-               .put(getContextBaseUrl() + "/" + mavenUser.getUsername())
+               .put(url, mavenUser.getUsername())
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -326,11 +332,12 @@ public class UserControllerTestIT
         UserForm input = buildFromUser(newUser, null);
         input.setPassword(null);
 
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(input)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek()
                .then()
                .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -355,11 +362,12 @@ public class UserControllerTestIT
         UserForm input = buildFromUser(newUser, null);
         input.setPassword("         ");
 
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(input)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek()
                .then()
                .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -382,11 +390,12 @@ public class UserControllerTestIT
         final String newPassword = "";
         UserForm user = buildUser(username, newPassword);
 
+        String url = getContextBaseUrl() + "/{username}";
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(user)
                .when()
-               .put(getContextBaseUrl() + "/{username}", username)
+               .put(url, username)
                .peek()
                .then()
                .statusCode(HttpStatus.FORBIDDEN.value())
@@ -424,11 +433,13 @@ public class UserControllerTestIT
         assertTrue(SetUtils.isEqualSet(updatedUser.getRoles(), ImmutableSet.of(SystemRole.UI_MANAGER.name())));
 
         admin.setRoles(ImmutableSet.of("ADMIN"));
+        
+        String url = getContextBaseUrl() + "/{username}";
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(acceptHeader)
                .body(admin)
                .when()
-               .put(getContextBaseUrl() + "/{username}", username)
+               .put(url, username)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -446,7 +457,7 @@ public class UserControllerTestIT
                .accept(acceptHeader)
                .body(admin)
                .when()
-               .put(getContextBaseUrl() + "/{username}", username)
+               .put(url, username)
                .then()
                .statusCode(HttpStatus.OK.value());
     }
@@ -455,15 +466,16 @@ public class UserControllerTestIT
     @WithUserDetails("deployer")
     public void testUserWithoutViewUserRoleShouldNotBeAbleToViewUserAccountData()
     {
+        String url = getContextBaseUrl() + "/{username}";
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl() + "/admin")
+               .get(url, "admin")
                .then()
                .statusCode(HttpStatus.FORBIDDEN.value());
 
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl() + "/deployer")
+               .get(url, "deployer")
                .then()
                .statusCode(HttpStatus.FORBIDDEN.value());
     }
@@ -476,11 +488,12 @@ public class UserControllerTestIT
         final String newPassword = "newPassword";
         UserForm admin = buildUser(username, newPassword);
 
+        String url = getContextBaseUrl() + "/{username}";
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(MediaType.APPLICATION_JSON_VALUE)
                .body(admin)
                .when()
-               .put(getContextBaseUrl() + "/{username}", username)
+               .put(url, username)
                .peek()
                .then()
                .statusCode(HttpStatus.FORBIDDEN.value());
@@ -494,11 +507,12 @@ public class UserControllerTestIT
         UserForm input = buildUser(username, "password-update");
 
         //1. Create user
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(MediaType.APPLICATION_JSON_VALUE)
                .body(input)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value()) // check http status code
@@ -512,11 +526,12 @@ public class UserControllerTestIT
         updatedUser.setSecurityTokenKey("seecret");
 
         //2. Provide `securityTokenKey`
+        url = getContextBaseUrl() + "/{username}";
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(MediaType.APPLICATION_JSON_VALUE)
                .body(updatedUser)
                .when()
-               .put(getContextBaseUrl() + "/{username}", username)
+               .put(url, username)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -527,9 +542,10 @@ public class UserControllerTestIT
         assertThat(user.getSecurityTokenKey(), equalTo("seecret"));
 
         //3. Generate token
+        url = getContextBaseUrl() + "/{username}/generate-security-token";
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl() + "/{username}/generate-security-token", username)
+               .get(url, username)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -547,11 +563,12 @@ public class UserControllerTestIT
         UserForm input = buildUser(username, password);
 
         //1. Create user
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(MediaType.APPLICATION_JSON_VALUE)
                .body(input)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value()) // check http status code
@@ -566,16 +583,17 @@ public class UserControllerTestIT
                //2. Provide `securityTokenKey` to null
                .body(buildFromUser(user, u -> u.setSecurityTokenKey(null)))
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek();
 
         user = retrieveUserByName(input.getUsername());
         assertNull(user.getSecurityTokenKey());
 
         //3. Generate token
+        url = getContextBaseUrl() + "/{username}/generate-security-token";
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .get(getContextBaseUrl() + "/{username}/generate-security-token", input.getUsername())
+               .get(url, input.getUsername())
                .peek()
                .then()
                .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -590,20 +608,22 @@ public class UserControllerTestIT
         // create new user
         UserForm userForm = buildUser("test-delete", "password-update");
 
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                .accept(MediaType.APPLICATION_JSON_VALUE)
                .body(userForm)
                .when()
-               .put(getContextBaseUrl())
+               .put(url)
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value()) // check http status code
                .body(containsString(SUCCESSFUL_CREATE_USER));
 
+        url = getContextBaseUrl() + "/{username}";
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .param("The name of the user", userForm.getUsername())
                .when()
-               .delete(getContextBaseUrl() + "/{name}", userForm.getUsername())
+               .delete(url, userForm.getUsername())
                .peek() // Use peek() to print the output
                .then()
                .statusCode(HttpStatus.OK.value()) // check http status code
@@ -616,9 +636,10 @@ public class UserControllerTestIT
     @WithUserDetails("test-deleting-own-user")
     public void testUserShouldNotBeAbleToDeleteHimself()
     {
+        String url = getContextBaseUrl() + "/{username}";
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .delete(getContextBaseUrl() + "/{username}", "test-deleting-own-user")
+               .delete(url, "test-deleting-own-user")
                .peek()
                .then()
                .statusCode(HttpStatus.FORBIDDEN.value())
@@ -630,9 +651,10 @@ public class UserControllerTestIT
     @WithMockUser(username = "another-admin", authorities = "DELETE_USER")
     public void testDeletingRootAdminShouldBeForbidden()
     {
+        String url = getContextBaseUrl() + "/{username}";
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .when()
-               .delete(getContextBaseUrl() + "/{username}", "admin")
+               .delete(url, "admin")
                .peek()
                .then()
                .statusCode(HttpStatus.FORBIDDEN.value())
@@ -656,11 +678,12 @@ public class UserControllerTestIT
         UserForm userForm = buildFromUser(new UserData(user), u -> u.setEnabled(true));
 
         // create new user
+        String url = getContextBaseUrl();
         given().contentType(MediaType.APPLICATION_JSON_VALUE)
                 .accept(acceptHeader)
                 .body(userForm)
                 .when()
-                .put(getContextBaseUrl())
+                .put(url)
                 .peek() // Use peek() to print the output
                 .then()
                 .statusCode(HttpStatus.OK.value()) // check http status code
@@ -694,10 +717,11 @@ public class UserControllerTestIT
     // get user through REST API
     private UserOutput getUser(String username)
     {
+        String url = getContextBaseUrl() + "/{username}";
         UserResponseEntity responseEntity = given().accept(MediaType.APPLICATION_JSON_VALUE)
                                                    .param("The name of the user", username)
                                                    .when()
-                                                   .get(getContextBaseUrl() + "/{username}", username)
+                                                   .get(url, username)
                                                    .then()
                                                    .statusCode(HttpStatus.OK.value())
                                                    .extract()

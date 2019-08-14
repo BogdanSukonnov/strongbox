@@ -11,6 +11,7 @@ import org.carlspring.strongbox.testing.storage.repository.RepositoryManagementT
 import java.nio.file.Path;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.parallel.Execution;
@@ -39,6 +40,15 @@ public class AqlControllerTest
 
     private static final String REPOSITORY_RELEASES = "sc-releases-search";
 
+    @Override
+    @BeforeEach
+    public void init()
+            throws Exception
+    {
+        super.init();
+        setContextBaseUrl("/api/aql");
+    }
+
     @Test
     @ExtendWith({ RepositoryManagementTestExecutionListener.class,
                   ArtifactManagementTestExecutionListener.class })
@@ -61,6 +71,7 @@ public class AqlControllerTest
         final String storageId = repository.getStorage().getId();
         final String repositoryId = repository.getId();
 
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .queryParam("query",
                            String.format(
@@ -68,7 +79,7 @@ public class AqlControllerTest
                                    storageId,
                                    repositoryId))
                .when()
-               .get(getContextBaseUrl() + "/api/aql")
+               .get(url)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -79,13 +90,14 @@ public class AqlControllerTest
     @Test
     public void testBadAqlSyntaxRequest()
     {
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .queryParam("query",
                            String.format(
                                    "storage:%s+repository:%s+groupId:org.carlspring.strongbox.searches-version:1.0.11.3.1",
                                    STORAGE_SC_TEST, REPOSITORY_RELEASES))
                .when()
-               .get(getContextBaseUrl() + "/api/aql")
+               .get(url)
                .then()
                .statusCode(HttpStatus.BAD_REQUEST.value())
                .body("error", Matchers.containsString("[1:103]"));
@@ -113,13 +125,14 @@ public class AqlControllerTest
         final String storageId = repository.getStorage().getId();
         final String repositoryId = repository.getId();
 
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .queryParam("query",
                            String.format("storage:%s+repository:%s+layout:maven+groupId:org.carlspring.strongbox.*",
                                          storageId,
                                          repositoryId))
                .when()
-               .get(getContextBaseUrl() + "/api/aql")
+               .get(url)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value())
@@ -129,10 +142,11 @@ public class AqlControllerTest
     @Test
     public void testSearchInvalidMavenCoordinates()
     {
+        String url = getContextBaseUrl();
         given().accept(MediaType.APPLICATION_JSON_VALUE)
                .queryParam("query", "layout:unknown-layout+id:org.carlspring.strongbox.*")
                .when()
-               .get(getContextBaseUrl() + "/api/aql")
+               .get(url)
                .then()
                .log()
                .body()

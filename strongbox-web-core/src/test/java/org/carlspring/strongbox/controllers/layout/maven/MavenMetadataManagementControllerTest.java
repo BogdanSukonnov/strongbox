@@ -87,9 +87,10 @@ public class MavenMetadataManagementControllerTest
         assertFalse(client.pathExists(metadataPath), "Metadata already exists!");
         client.rebuildMetadata(storageId, repositoryId, null);
 
+        String url = getContextBaseUrl() + metadataPath;
         given().contentType(MediaType.TEXT_PLAIN_VALUE)
                .when()
-               .get(getContextBaseUrl() + metadataPath)
+               .get(url)
                .peek()
                .then()
                .statusCode(HttpStatus.OK.value());

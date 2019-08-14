@@ -3,8 +3,8 @@ package org.carlspring.strongbox.rest.common;
 import org.carlspring.commons.io.MultipleDigestOutputStream;
 import org.carlspring.strongbox.repository.RepositoryManagementStrategyException;
 import org.carlspring.strongbox.rest.client.RestAssuredArtifactClient;
-import org.carlspring.strongbox.storage.repository.RepositoryDto;
 import org.carlspring.strongbox.storage.repository.RawRepositoryFactory;
+import org.carlspring.strongbox.storage.repository.RepositoryDto;
 import org.carlspring.strongbox.storage.repository.RepositoryTypeEnum;
 import org.carlspring.strongbox.storage.repository.remote.RemoteRepositoryDto;
 import org.carlspring.strongbox.testing.TestCaseWithRepositoryManagement;
@@ -22,6 +22,7 @@ import java.util.Collection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.web.context.WebApplicationContext;
@@ -84,7 +85,7 @@ public class RawRestAssuredBaseTest
     {
         logger.trace("[pathExists] URL -> " + url);
 
-        return given().header("user-agent", "Raw/*")
+        return given().header(HttpHeaders.USER_AGENT, "Raw/*")
                       .contentType(MediaType.TEXT_PLAIN_VALUE)
                       .when()
                       .get(url)

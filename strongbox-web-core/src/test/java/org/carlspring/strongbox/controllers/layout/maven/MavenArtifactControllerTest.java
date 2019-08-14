@@ -61,6 +61,7 @@ import org.mockito.MockitoAnnotations;
 import org.mockito.Spy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -973,7 +974,7 @@ public class MavenArtifactControllerTest
         String artifactPath = "org/carlspring/strongbox/test/dynamic-privileges/1.0/dynamic-privileges-1.0.jar";
 
         // When
-        int statusCode = given().header("user-agent", "Maven/*")
+        int statusCode = given().header(HttpHeaders.USER_AGENT, "Maven/*")
                                 .contentType(MediaType.TEXT_PLAIN_VALUE)
                                 .when()
                                 .get(url, storageId, repositoryId, artifactPath)
@@ -1000,7 +1001,7 @@ public class MavenArtifactControllerTest
         String artifactPath = String.format("org/carlspring/commons/commons-http/%s/commons-http-%s.jar",
                                             commonsHttpSnapshot.version, commonsHttpSnapshot.timestampedVersion);
 
-        given().header("user-agent", "Maven/*")
+        given().header(HttpHeaders.USER_AGENT, "Maven/*")
                .contentType(MediaType.TEXT_PLAIN_VALUE)
                .when()
                .get(url, "public", "maven-group", artifactPath)
@@ -1011,8 +1012,9 @@ public class MavenArtifactControllerTest
     @Test
     public void shouldNotAllowRequestingPathsWithSlashAtTheEnd()
     {
+        String url = getContextBaseUrl() + "/storages/{storageId}/{repositoryId}/{artifactPath}";
         given().when()
-               .get(getContextBaseUrl() + "/storages/public/maven-group/org/carlspring/commons/commons-io/")
+               .get(url, "public", "maven-group", "org/carlspring/commons/commons-io/")
                .peek()
                .then()
                .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -1022,8 +1024,9 @@ public class MavenArtifactControllerTest
     @Test
     public void shouldRequireArtifactVersion()
     {
+        String url = getContextBaseUrl() + "/storages/{storageId}/{repositoryId}/{artifactPath}";
         given().when()
-               .get(getContextBaseUrl() + "/storages/public/maven-group/org/carlspring/logging/logback-configuration")
+               .get(url, "public", "maven-group", "org/carlspring/logging/logback-configuration")
                .peek()
                .then()
                .statusCode(HttpStatus.BAD_REQUEST.value())
@@ -1081,7 +1084,7 @@ public class MavenArtifactControllerTest
         String artifactPath = String.format("org/carlspring/commons/commons-http/%s/commons-http-%s.jar",
                                             commonsHttpSnapshot.version, commonsHttpSnapshot.timestampedVersion);
 
-        given().header("user-agent", "Maven/*")
+        given().header(HttpHeaders.USER_AGENT, "Maven/*")
                .contentType(MediaType.TEXT_PLAIN_VALUE)
                .when()
                .get(url, "storage-common-proxies", "carlspring", artifactPath)
