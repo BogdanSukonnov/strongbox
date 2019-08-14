@@ -141,7 +141,10 @@ public class UserControllerTestIT
         deleteCreatedUser(username);
     }
 
-    private void userNotFound(String acceptHeader)
+    @ParameterizedTest
+    @ValueSource(strings = { MediaType.APPLICATION_JSON_VALUE,
+                             MediaType.TEXT_PLAIN_VALUE })
+    void testUserNotFound(String acceptHeader)
     {
         final String username = "userNotFound";
 
@@ -152,18 +155,6 @@ public class UserControllerTestIT
                .then()
                .statusCode(HttpStatus.NOT_FOUND.value())
                .body(containsString(NOT_FOUND_USER));
-    }
-
-    @Test
-    public void testUserNotFoundWithTextAcceptHeader()
-    {
-        userNotFound(MediaType.TEXT_PLAIN_VALUE);
-    }
-
-    @Test
-    public void testUserNotFoundWithJsonAcceptHeader()
-    {
-        userNotFound(MediaType.APPLICATION_JSON_VALUE);
     }
 
     @ParameterizedTest

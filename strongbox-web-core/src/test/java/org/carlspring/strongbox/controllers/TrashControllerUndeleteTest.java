@@ -41,8 +41,9 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 public class TrashControllerUndeleteTest
         extends MavenRestAssuredBaseTest
 {
+    private static final String REPOSITORY_WITH_TRASH_1 = "tcut-releases-with-trash-1";
 
-    private static final String REPOSITORY_WITH_TRASH = "tcut-releases-with-trash";
+    private static final String REPOSITORY_WITH_TRASH_2 = "tcut-releases-with-trash-2";
 
     private static final String REPOSITORY_RELEASES = "tcut-releases";
 
@@ -62,11 +63,11 @@ public class TrashControllerUndeleteTest
     @ValueSource(strings = { MediaType.APPLICATION_JSON_VALUE,
                              MediaType.TEXT_PLAIN_VALUE })
     void testUndeleteArtifactFromTrashForRepository(String acceptHeader,
-                                                    @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH,
+                                                    @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH_1,
                                                             setup = MavenIndexedRepositorySetup.class)
                                                     @RepositoryAttributes(trashEnabled = true)
                                                             Repository repository,
-                                                    @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH,
+                                                    @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH_1,
                                                             id = "org.carlspring.strongbox.undelete:test-artifact-undelete",
                                                             versions =  { "1.0",
                                                                           "1.1" })
@@ -118,11 +119,11 @@ public class TrashControllerUndeleteTest
     @ValueSource(strings = { MediaType.APPLICATION_JSON_VALUE,
                              MediaType.TEXT_PLAIN_VALUE })
     void testUndeleteArtifactsForAllRepositories(String acceptHeader,
-                                                 @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH,
+                                                 @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH_2,
                                                          setup = MavenIndexedRepositorySetup.class)
                                                  @RepositoryAttributes(trashEnabled = true)
                                                          Repository repository1,
-                                                 @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH,
+                                                 @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH_2,
                                                          id = "org.carlspring.strongbox.undelete:test-artifact-undelete",
                                                          versions =  { "1.0",
                                                                        "1.1" })

@@ -3,26 +3,24 @@ package org.carlspring.strongbox.controllers.layout.raw;
 import org.carlspring.strongbox.config.IntegrationTest;
 import org.carlspring.strongbox.providers.layout.RawLayoutProvider;
 import org.carlspring.strongbox.rest.common.RawRestAssuredBaseTest;
-import org.carlspring.strongbox.storage.repository.*;
+import org.carlspring.strongbox.storage.repository.Repository;
+import org.carlspring.strongbox.testing.storage.repository.RepositoryManagementTestExecutionListener;
+import org.carlspring.strongbox.testing.storage.repository.TestRepository;
+import org.carlspring.strongbox.testing.storage.repository.TestRepository.Group;
+import org.carlspring.strongbox.testing.storage.repository.TestRepository.Remote;
 
-import javax.inject.Inject;
-import javax.xml.bind.JAXBException;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.LinkedHashSet;
-import java.util.Set;
-
-import com.google.common.collect.Sets;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.parallel.Execution;
+import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 
 /**
  * @author Martin Todorov
+ * @author Pablo Tirado
  */
 @IntegrationTest
+@Execution(CONCURRENT)
 public class RawArtifactControllerTestIT
         extends RawRestAssuredBaseTest
 {
@@ -33,65 +31,14 @@ public class RawArtifactControllerTestIT
 
     private static final String REPOSITORY_GROUP = "ractit-raw-group";
 
-    @Inject
-    RawRepositoryFactory rawRepositoryFactory;
-
-
-    @BeforeAll
-    public static void cleanUp()
-            throws Exception
-    {
-        cleanUp(getRepositoriesToClean());
-    }
-
-    public static Set<RepositoryDto> getRepositoriesToClean()
-    {
-        Set<RepositoryDto> repositories = new LinkedHashSet<>();
-        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_RELEASES, RawLayoutProvider.ALIAS));
-        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_PROXY, RawLayoutProvider.ALIAS));
-        repositories.add(createRepositoryMock(STORAGE0, REPOSITORY_GROUP, RawLayoutProvider.ALIAS));
-
-        return repositories;
-    }
+    private static final String REMOTE_URL = "http://slackbuilds.org/slackbuilds/14.2/";
 
     @Override
     @BeforeEach
     public void init()
             throws Exception
     {
-        // Notes:
-        // This tests resources currently don't need per test method isolation.
-        // In case the requirements change, this test will need to be refactored.
         super.init();
-
-        RepositoryDto repository1 = rawRepositoryFactory.createRepository(REPOSITORY_RELEASES);
-        repository1.setPolicy(RepositoryPolicyEnum.RELEASE.getPolicy());
-
-        createRepository(STORAGE0, repository1);
-
-        //noinspection ResultOfMethodCallIgnored
-        Files.createDirectories(Paths.get(TEST_RESOURCES));
-
-        createFile(new RepositoryData(repository1), "org/foo/bar/blah.zip");
-
-        createProxyRepository(STORAGE0,
-                              REPOSITORY_PROXY,
-                              "http://slackbuilds.org/slackbuilds/14.2/");
-        // Required for http://www-eu.apache.org/dist/maven/pom/apache-19-source-release.zip
-
-        RepositoryDto repository2 = rawRepositoryFactory.createRepository(REPOSITORY_GROUP);
-        repository2.setType(RepositoryTypeEnum.GROUP.getType());
-        repository2.setGroupRepositories(Sets.newHashSet(STORAGE0 + ":" + REPOSITORY_PROXY));
-
-        createRepository(STORAGE0, repository2);
-        // Required for apache-19-source-release.zip
-    }
-
-    @AfterEach
-    public void removeRepositories()
-            throws IOException, JAXBException
-    {
-        removeRepositories(getRepositoriesToClean());
     }
 
     /**
@@ -99,12 +46,22 @@ public class RawArtifactControllerTestIT
      *
      * @throws Exception
      */
+    @ExtendWith(RepositoryManagementTestExecutionListener.class)
     @Test
-    public void testResolveArtifactViaProxy()
+    public void testResolveArtifactViaProxy(@TestRepository(layout = RawLayoutProvider.ALIAS,
+                                                            repositoryId = REPOSITORY_RELEASES)
+                                            Repository releasesRepository,
+                                            @Remote (url = REMOTE_URL
+    )                                       @TestRepository(layout = RawLayoutProvider.ALIAS,
+                                                            repositoryId = REPOSITORY_PROXY)
+                                            Repository proxyRepository)
             throws Exception
     {
-        String artifactPath = "/storages/" + STORAGE0 + "/" + REPOSITORY_PROXY +
-                              "/system/alien.tar.gz";
+        final String storageId = proxyRepository.getStorage().getId();
+        final String repositoryId = proxyRepository.getId();
+        final String path = "system/alien.tar.gz";
+
+        String artifactPath = "/storages/" + storageId + "/" + repositoryId + "/" + path;
 
         resolveArtifact(artifactPath);
     }
@@ -114,12 +71,26 @@ public class RawArtifactControllerTestIT
      *
      * @throws Exception
      */
+    @ExtendWith(RepositoryManagementTestExecutionListener.class)
     @Test
-    public void testResolveArtifactViaGroupWithProxy()
+    public void testResolveArtifactViaGroupWithProxy(@TestRepository(layout = RawLayoutProvider.ALIAS,
+                                                                     repositoryId = REPOSITORY_RELEASES)
+                                                     Repository releasesRepository,
+                                                     @Remote (url = REMOTE_URL
+    )                                                @TestRepository(layout = RawLayoutProvider.ALIAS,
+                                                                     repositoryId = REPOSITORY_PROXY)
+                                                     Repository proxyRepository,
+                                                     @Group(repositories = REPOSITORY_PROXY)
+                                                     @TestRepository(layout = RawLayoutProvider.ALIAS,
+                                                                     repositoryId = REPOSITORY_GROUP)
+                                                     Repository groupRepository)
             throws Exception
     {
-        String artifactPath = "/storages/" + STORAGE0 + "/" + REPOSITORY_GROUP +
-                              "/system/alien.tar.gz";
+        final String storageId = groupRepository.getStorage().getId();
+        final String repositoryGroupId = groupRepository.getId();
+        final String path = "system/alien.tar.gz";
+
+        String artifactPath = "/storages/" + storageId + "/" + repositoryGroupId + "/" + path;
 
         resolveArtifact(artifactPath);
     }

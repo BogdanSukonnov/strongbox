@@ -41,10 +41,15 @@ import static org.junit.jupiter.api.parallel.ExecutionMode.CONCURRENT;
 public class TrashControllerTest
         extends MavenRestAssuredBaseTest
 {
+    private static final String REPOSITORY_WITH_TRASH_1 = "tct-releases-with-trash-1";
 
-    private static final String REPOSITORY_WITH_TRASH = "tct-releases-with-trash";
+    private static final String REPOSITORY_WITH_TRASH_2 = "tct-releases-with-trash-2";
 
-    private static final String REPOSITORY_WITH_FORCE_DELETE = "tct-releases-with-force-delete";
+    private static final String REPOSITORY_WITH_TRASH_3 = "tct-releases-with-trash-3";
+
+    private static final String REPOSITORY_WITH_FORCE_DELETE_1 = "tct-releases-with-force-delete-1";
+
+    private static final String REPOSITORY_WITH_FORCE_DELETE_2 = "tct-releases-with-force-delete-2";
 
     @Override
     @BeforeEach
@@ -59,10 +64,10 @@ public class TrashControllerTest
     @ExtendWith({ RepositoryManagementTestExecutionListener.class,
                   ArtifactManagementTestExecutionListener.class })
     @Test
-    public void testForceDeleteArtifactNotAllowed(@MavenRepository(repositoryId = REPOSITORY_WITH_TRASH)
+    public void testForceDeleteArtifactNotAllowed(@MavenRepository(repositoryId = REPOSITORY_WITH_TRASH_1)
                                                   @RepositoryAttributes(trashEnabled = true)
                                                   Repository repository,
-                                                  @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH,
+                                                  @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH_1,
                                                                      id = "org.carlspring.strongbox:test-artifact-to-trash",
                                                                      versions = "1.0")
                                                   Path artifactPath)
@@ -94,9 +99,9 @@ public class TrashControllerTest
     @ExtendWith({ RepositoryManagementTestExecutionListener.class,
                   ArtifactManagementTestExecutionListener.class })
     @Test
-    public void testForceDeleteArtifactAllowed(@MavenRepository(repositoryId = REPOSITORY_WITH_FORCE_DELETE)
+    public void testForceDeleteArtifactAllowed(@MavenRepository(repositoryId = REPOSITORY_WITH_FORCE_DELETE_1)
                                                Repository repository,
-                                               @MavenTestArtifact(repositoryId = REPOSITORY_WITH_FORCE_DELETE,
+                                               @MavenTestArtifact(repositoryId = REPOSITORY_WITH_FORCE_DELETE_1,
                                                                   id = "org.carlspring.strongbox:test-artifact-to-trash",
                                                                   versions = "1.1")
                                                Path artifactPath)
@@ -128,10 +133,10 @@ public class TrashControllerTest
     @ValueSource(strings = { MediaType.APPLICATION_JSON_VALUE,
                              MediaType.TEXT_PLAIN_VALUE })
     void testDeleteArtifactAndEmptyTrashForRepository(String acceptHeader,
-                                                      @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH)
+                                                      @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH_2)
                                                       @RepositoryAttributes(trashEnabled = true)
                                                       Repository repository,
-                                                      @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH,
+                                                      @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH_2,
                                                                          id = "org.carlspring.strongbox:test-artifact-to-trash",
                                                                          versions = "1.0")
                                                       Path artifactPath)
@@ -161,16 +166,16 @@ public class TrashControllerTest
     @ValueSource(strings = { MediaType.APPLICATION_JSON_VALUE,
                              MediaType.TEXT_PLAIN_VALUE })
     void testDeleteArtifactAndEmptyTrashForAllRepositories(String acceptHeader,
-                                                           @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH)
+                                                           @MavenRepository(repositoryId = REPOSITORY_WITH_TRASH_3)
                                                            @RepositoryAttributes(trashEnabled = true)
                                                            Repository repository1,
-                                                           @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH,
+                                                           @MavenTestArtifact(repositoryId = REPOSITORY_WITH_TRASH_3,
                                                                               id = "org.carlspring.strongbox:test-artifact-to-trash",
                                                                               versions = "1.0")
                                                            Path artifactPath1,
-                                                           @MavenRepository(repositoryId = REPOSITORY_WITH_FORCE_DELETE)
+                                                           @MavenRepository(repositoryId = REPOSITORY_WITH_FORCE_DELETE_2)
                                                            Repository repository2,
-                                                           @MavenTestArtifact(repositoryId = REPOSITORY_WITH_FORCE_DELETE,
+                                                           @MavenTestArtifact(repositoryId = REPOSITORY_WITH_FORCE_DELETE_2,
                                                                               id = "org.carlspring.strongbox:test-artifact-to-trash",
                                                                               versions = "1.1")
                                                            Path artifactPath2)
